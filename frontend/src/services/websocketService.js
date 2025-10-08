@@ -18,7 +18,7 @@ class WebSocketService {
   /**
    * Connect to the WebSocket server
    */
-  connect(name, color) {
+  connect(name, color, role = 'student') {
     try {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const wsUrl = `${protocol}//${window.location.hostname}:8765`;
@@ -37,7 +37,7 @@ class WebSocketService {
 
         // Send user registration (name/color)
         if (name) {
-          this.send({ type: 'register_user', name, color });
+          this.send({ type: 'register_user', name, color, role });
         }
       };
 

@@ -38,8 +38,11 @@ function App() {
     setUserColor(color);
     setIsLoggedIn(true);
     
-    // Connect to WebSocket with name/color
-    websocketService.connect(name, color);
+    // Determine role from URL (?admin=1)
+    const params = new URLSearchParams(window.location.search);
+    const role = params.get('admin') ? 'admin' : 'student';
+    // Connect to WebSocket with name/color/role
+    websocketService.connect(name, color, role);
   };
 
   // Generate random car color

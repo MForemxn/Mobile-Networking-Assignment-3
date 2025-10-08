@@ -121,10 +121,14 @@ class SimpleVehicleServer:
                 # Student registers with name/color
                 name = data.get('name', 'Student')[:32]
                 color = data.get('color') or self.generate_vehicle_color(len(self.roster))
+                role = data.get('role', 'student')
                 self.roster[device_id] = { 'name': name, 'color': color }
                 # Update device state color too
                 if device_id in self.device_states:
                     self.device_states[device_id]['color'] = color
+                    if role == 'admin':
+                        self.device_states[device_id]['vehicle_type'] = 'emergency_vehicle'
+                        self.device_states[device_id]['is_emergency_active'] = True
                 await self.broadcast_message({
                     'type': 'roster_update',
                     'roster': self.roster

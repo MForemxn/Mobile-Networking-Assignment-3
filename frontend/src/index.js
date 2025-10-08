@@ -10,7 +10,5 @@ const demoMode = urlParams.get('mode') || 'highway';  // 'highway' or 'traffic'
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-  <React.StrictMode>
-    {demoMode === 'traffic' ? <TrafficGrid /> : <App />}
-  </React.StrictMode>
+  demoMode === 'traffic' ? <TrafficGrid /> : <App />
 );
