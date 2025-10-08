@@ -291,7 +291,7 @@ function App() {
         <div className="error-message">
           <h3>Connection Error</h3>
           <p>{connectionError}</p>
-          <button onClick={connectWebSocket} style={{ marginTop: '10px' }}>
+          <button onClick={() => window.location.reload()} style={{ marginTop: '10px' }}>
             Retry Connection
           </button>
         </div>

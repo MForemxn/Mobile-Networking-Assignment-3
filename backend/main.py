@@ -1,20 +1,15 @@
 #!/usr/bin/env python3
 """
-Emergency Vehicle Communication System - WebSocket Server
-Main entry point for the vehicle communication simulation server.
+Simple Emergency Vehicle Communication System - WebSocket Server
+Basic WebSocket server for testing the frontend without complex dependencies.
 """
 
 import asyncio
 import json
 import logging
 import uuid
-from typing import Dict, List, Set
 import websockets
 from websockets import WebSocketServerProtocol
-
-from device_manager import DeviceManager
-from websocket_handler import WebSocketHandler
-from emergency_system import EmergencyResponseSystem
 
 # Configure logging
 logging.basicConfig(
@@ -23,163 +18,179 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-class VehicleCommunicationServer:
-    """Main WebSocket server for vehicle communication simulation."""
+class SimpleVehicleServer:
+    """Simple WebSocket server for vehicle communication simulation."""
 
     def __init__(self, host: str = 'localhost', port: int = 8765):
         self.host = host
         self.port = port
+        self.connections = {}  # device_id -> websocket
+        self.device_states = {}  # device_id -> state info
+        self.emergency_active = False
+        self.emergency_device = None
 
-        # Initialize core systems
-        self.device_manager = DeviceManager()
-        self.websocket_handler = WebSocketHandler(self)
-        self.emergency_system = EmergencyResponseSystem(self.device_manager)
+    def generate_device_id(self):
+        """Generate a unique device ID."""
+        return str(uuid.uuid4())[:8]
 
-        # Set up cross-references
-        self.device_manager.set_websocket_handler(self.websocket_handler)
+    async def register_device(self, websocket: WebSocketServerProtocol, device_type: str = None):
+        """Register a new device."""
+        device_id = self.generate_device_id()
+        self.connections[device_id] = websocket
 
-    async def register_device(self, websocket: WebSocketServerProtocol, device_type: str = None) -> str:
-        """Register a new device and return its unique ID."""
-        device_id = self.device_manager.register_device(websocket, device_type)
-        await self.websocket_handler.register_connection(device_id, websocket)
+        # Initialize device state
+        self.device_states[device_id] = {
+            'device_id': device_id,
+            'vehicle_type': device_type or 'regular_car',
+            'current_lane': 2,  # Middle lane
+            'position_x': 0,
+            'position_y': 50,
+            'speed': 50,
+            'is_emergency_active': device_type == 'emergency_vehicle'
+        }
 
         logger.info(f"Device registered: {device_id}")
         return device_id
 
     async def unregister_device(self, device_id: str):
-        """Remove a device from the system."""
-        self.device_manager.unregister_device(device_id)
-        await self.websocket_handler.unregister_connection(device_id)
+        """Remove a device."""
+        if device_id in self.connections:
+            del self.connections[device_id]
+        if device_id in self.device_states:
+            del self.device_states[device_id]
 
         logger.info(f"Device unregistered: {device_id}")
 
     async def broadcast_message(self, message: dict, exclude_device: str = None):
-        """Broadcast a message to all connected devices except optionally one."""
-        await self.websocket_handler.broadcast_to_all(message, exclude_device)
+        """Broadcast message to all connected devices."""
+        disconnected = []
+        for device_id, websocket in self.connections.items():
+            if device_id != exclude_device:
+                try:
+                    await websocket.send(json.dumps(message))
+                except websockets.exceptions.ConnectionClosed:
+                    disconnected.append(device_id)
 
-    async def handle_emergency_signal(self, device_id: str):
-        """Handle emergency signal from a device."""
-        if self.emergency_system.can_activate_emergency(device_id):
-            success = await self.emergency_system.activate_emergency_signal(device_id)
-            if not success:
-                logger.warning(f"Failed to activate emergency signal for device: {device_id}")
-        else:
-            logger.warning(f"Device {device_id} cannot activate emergency signal")
-
-    async def handle_position_update(self, device_id: str, position_data: dict):
-        """Handle position update from a device."""
-        if device_id in self.device_manager.devices:
-            self.device_manager.update_device_position(
-                device_id,
-                position_data.get('x', 0),
-                position_data.get('y', 0),
-                position_data.get('speed')
-            )
-
-        # Broadcast position update to other devices
-        position_message = {
-            'type': 'position_update',
-            'device_id': device_id,
-            'position': self.device_manager.get_device_state(device_id).to_dict() if device_id in self.device_manager.devices else {}
-        }
-
-        await self.broadcast_message(position_message, exclude_device=device_id)
+        # Clean up disconnected devices
+        for device_id in disconnected:
+            await self.unregister_device(device_id)
 
     async def handle_message(self, websocket: WebSocketServerProtocol, message: str):
-        """Handle incoming message from a device."""
+        """Handle incoming message."""
         try:
             data = json.loads(message)
-            message_type = data.get('type')
             device_id = data.get('device_id')
+            message_type = data.get('type')
 
-            # If device_id not in message, find it from websocket connection
+            # Find device_id if not provided
             if not device_id:
-                for did, ws in self.websocket_handler.device_connections.items():
+                for did, ws in self.connections.items():
                     if ws == websocket:
                         device_id = did
                         break
 
-            if not device_id:
-                logger.warning("Received message from unregistered device")
+            if not device_id or device_id not in self.connections:
                 return
 
             if message_type == 'register_emergency':
-                await self.handle_emergency_signal(device_id)
+                self.emergency_active = True
+                self.emergency_device = device_id
+
+                # Broadcast emergency signal
+                emergency_msg = {
+                    'type': 'emergency_signal',
+                    'device_id': device_id,
+                    'message': 'Emergency vehicle approaching - clear the way!'
+                }
+                await self.broadcast_message(emergency_msg, exclude_device=device_id)
 
             elif message_type == 'clear_emergency':
-                await self.emergency_system.deactivate_emergency_signal(device_id)
-                clear_message = {
+                self.emergency_active = False
+                self.emergency_device = None
+
+                # Broadcast emergency cleared
+                clear_msg = {
                     'type': 'emergency_cleared',
                     'device_id': device_id
                 }
-                await self.broadcast_message(clear_message)
+                await self.broadcast_message(clear_msg)
 
             elif message_type == 'position_update':
-                await self.handle_position_update(device_id, data.get('position', {}))
+                # Update device position
+                if device_id in self.device_states:
+                    position = data.get('position', {})
+                    self.device_states[device_id].update({
+                        'position_x': position.get('x', self.device_states[device_id]['position_x']),
+                        'position_y': position.get('y', self.device_states[device_id]['position_y']),
+                        'speed': position.get('speed', self.device_states[device_id]['speed'])
+                    })
+
+                    # Broadcast position update
+                    pos_msg = {
+                        'type': 'position_update',
+                        'device_id': device_id,
+                        'position': self.device_states[device_id]
+                    }
+                    await self.broadcast_message(pos_msg, exclude_device=device_id)
 
             elif message_type == 'lane_change':
-                # Handle lane change requests
+                # Handle lane change
                 new_lane = data.get('new_lane')
-                reason = data.get('reason', 'manual')
-                if new_lane and device_id in self.device_manager.devices:
-                    from device_manager import LanePosition
-                    try:
-                        lane_enum = LanePosition(new_lane)
-                        self.device_manager.update_device_lane(device_id, lane_enum, reason)
-                    except ValueError:
-                        logger.warning(f"Invalid lane number: {new_lane}")
+                if new_lane and device_id in self.device_states:
+                    old_lane = self.device_states[device_id]['current_lane']
+                    self.device_states[device_id]['current_lane'] = new_lane
 
-            elif message_type == 'ping':
-                # Respond to ping with pong
-                pong_message = {'type': 'pong', 'timestamp': asyncio.get_event_loop().time()}
-                await websocket.send(json.dumps(pong_message))
-
-            elif message_type == 'get_system_state':
-                # Send current system state
-                system_state = {
-                    'type': 'system_state',
-                    'devices': self.device_manager.get_all_devices_state(),
-                    'emergency_status': self.emergency_system.get_emergency_status(),
-                    'road_state': self.device_manager.get_road_state()
-                }
-                await websocket.send(json.dumps(system_state))
+                    # Broadcast lane change
+                    lane_msg = {
+                        'type': 'lane_change',
+                        'device_id': device_id,
+                        'old_lane': old_lane,
+                        'new_lane': new_lane,
+                        'reason': data.get('reason', 'manual')
+                    }
+                    await self.broadcast_message(lane_msg, exclude_device=device_id)
 
         except json.JSONDecodeError:
             logger.warning(f"Invalid JSON received: {message}")
         except Exception as e:
             logger.error(f"Error handling message: {e}")
 
-    async def connection_handler(self, websocket: WebSocketServerProtocol, path: str):
+    async def connection_handler(self, websocket):
         """Handle new WebSocket connection."""
         device_id = None
 
         try:
-            # Register the device (check for device type in query params)
+            # Register device
             device_type = None
-            if '?' in path:
-                query = path.split('?')[1]
-                if 'type=emergency' in query:
-                    device_type = 'emergency'
+            # Check the path from websocket.request if available
+            if hasattr(websocket, 'request') and websocket.request:
+                path = websocket.request.path
+                if '?' in path:
+                    query = path.split('?')[1]
+                    if 'type=emergency' in query:
+                        device_type = 'emergency_vehicle'
 
             device_id = await self.register_device(websocket, device_type)
 
-            # Send welcome message with device ID
-            welcome_message = {
+            # Send welcome message
+            welcome_msg = {
                 'type': 'welcome',
                 'device_id': device_id,
-                'vehicle_type': self.device_manager.get_device_state(device_id).vehicle_type.value if device_id in self.device_manager.devices else 'unknown',
+                'vehicle_type': self.device_states[device_id]['vehicle_type'],
                 'message': f'Device {device_id} connected successfully'
             }
-            await websocket.send(json.dumps(welcome_message))
+            await websocket.send(json.dumps(welcome_msg))
 
-            # Send current state
-            state_message = {
+            # Send current system state
+            state_msg = {
                 'type': 'system_state',
-                'devices': self.device_manager.get_all_devices_state(),
-                'emergency_status': self.emergency_system.get_emergency_status(),
-                'road_state': self.device_manager.get_road_state()
+                'devices': self.device_states,
+                'emergency_status': {
+                    'active': self.emergency_active,
+                    'active_emergency_device': self.emergency_device
+                }
             }
-            await websocket.send(json.dumps(state_message))
+            await websocket.send(json.dumps(state_msg))
 
             # Handle incoming messages
             async for message in websocket:
@@ -195,7 +206,7 @@ class VehicleCommunicationServer:
 
     async def start_server(self):
         """Start the WebSocket server."""
-        logger.info(f"Starting Emergency Vehicle Communication Server on {self.host}:{self.port}")
+        logger.info(f"Starting Emergency Vehicle Server on {self.host}:{self.port}")
 
         async with websockets.serve(
             self.connection_handler,
@@ -208,9 +219,9 @@ class VehicleCommunicationServer:
             await asyncio.Future()  # Run forever
 
     def run(self):
-        """Run the server (blocking call)."""
+        """Run the server."""
         asyncio.run(self.start_server())
 
 if __name__ == '__main__':
-    server = VehicleCommunicationServer()
+    server = SimpleVehicleServer()
     server.run()

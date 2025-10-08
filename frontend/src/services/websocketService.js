@@ -5,7 +5,7 @@
 class WebSocketService {
   constructor() {
     this.websocket = null;
-    this.isConnected = false;
+    this._isConnected = false;
     this.deviceId = null;
     this.vehicleType = null;
     this.isEmergencyVehicle = false;
@@ -28,7 +28,7 @@ class WebSocketService {
 
       this.websocket.onopen = () => {
         console.log('WebSocket connected');
-        this.isConnected = true;
+        this._isConnected = true;
         this.reconnectAttempts = 0;
         this.emit('connected');
 
@@ -47,7 +47,7 @@ class WebSocketService {
 
       this.websocket.onclose = (event) => {
         console.log('WebSocket disconnected:', event.code, event.reason);
-        this.isConnected = false;
+        this._isConnected = false;
         this.emit('disconnected', { code: event.code, reason: event.reason });
 
         if (event.code !== 1000) { // Not a normal closure
@@ -74,7 +74,7 @@ class WebSocketService {
       this.websocket.close(1000, 'Client disconnect');
       this.websocket = null;
     }
-    this.isConnected = false;
+    this._isConnected = false;
   }
 
   /**
@@ -261,7 +261,7 @@ class WebSocketService {
    * Check if WebSocket is connected
    */
   get isConnected() {
-    return this.websocket && this.websocket.readyState === WebSocket.OPEN;
+    return this._isConnected;
   }
 }
 
