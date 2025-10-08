@@ -116,11 +116,20 @@ class SimpleVehicleServer:
             if not device_id or device_id not in self.connections:
                 return
 
-            if message_type == 'register_emergency':
-                await self.trigger_emergency(device_id)
+            if message_type == 'register_emergency' or message_type == 'register':
+                # Handle emergency from either web client or LoRa gateway
+                source = data.get('source', 'vehicle')
+                rssi = data.get('rssi', 0)
+                snr = data.get('snr', 0)
+                
+                if source == 'cv2x_lora':
+                    logger.info(f"📡 C-V2X LoRa emergency received via gateway | RSSI: {rssi} dBm, SNR: {snr} dB")
+                
+                await self.trigger_emergency(device_id, source)
 
             elif message_type == 'clear_emergency':
-                await self.clear_emergency(device_id)
+                source = data.get('source', 'vehicle')
+                await self.clear_emergency(device_id, source)
 
             elif message_type == 'position_update':
                 # Update device position
@@ -162,22 +171,30 @@ class SimpleVehicleServer:
         except Exception as e:
             logger.error(f"Error handling message: {e}")
     
-    async def trigger_emergency(self, device_id):
+    async def trigger_emergency(self, device_id, source='vehicle'):
         """Trigger emergency signal from a specific device."""
         self.emergency_active = True
         self.emergency_device = device_id
 
         # Broadcast emergency signal to ALL devices
+        message_text = '🚨 EMERGENCY VEHICLE APPROACHING - CLEAR THE WAY!'
+        if source == 'cv2x_lora':
+            message_text = '📡 C-V2X EMERGENCY BROADCAST RECEIVED - CLEAR ALL LANES!'
+        
         emergency_msg = {
             'type': 'emergency_signal',
             'device_id': device_id,
-            'message': '🚨 EMERGENCY VEHICLE APPROACHING - CLEAR THE WAY!',
-            'source': 'vehicle'
+            'message': message_text,
+            'source': source
         }
         await self.broadcast_message(emergency_msg)
-        logger.info(f"Emergency triggered by device: {device_id}")
+        
+        if source == 'cv2x_lora':
+            logger.info(f"🚨 C-V2X Emergency triggered via LoRa: {device_id}")
+        else:
+            logger.info(f"Emergency triggered by device: {device_id}")
     
-    async def clear_emergency(self, device_id):
+    async def clear_emergency(self, device_id, source='vehicle'):
         """Clear emergency signal from a specific device."""
         self.emergency_active = False
         self.emergency_device = None
@@ -185,10 +202,15 @@ class SimpleVehicleServer:
         # Broadcast emergency cleared to ALL devices
         clear_msg = {
             'type': 'emergency_cleared',
-            'device_id': device_id
+            'device_id': device_id,
+            'source': source
         }
         await self.broadcast_message(clear_msg)
-        logger.info(f"Emergency cleared by device: {device_id}")
+        
+        if source == 'cv2x_lora':
+            logger.info(f"🟢 C-V2X Emergency cleared via LoRa: {device_id}")
+        else:
+            logger.info(f"Emergency cleared by device: {device_id}")
     
     async def trigger_arduino_emergency(self):
         """Trigger emergency from Arduino button - affects ALL vehicles."""

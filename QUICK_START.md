@@ -1,12 +1,15 @@
-# 🚀 Quick Start - Interactive Classroom Demo
+# 🚀 Quick Start - C-V2X Emergency Vehicle Demo
 
 ## **What You Built:**
 
-An **interactive real-time traffic simulation** where:
+An **interactive real-time traffic simulation using C-V2X technology** where:
 - ✅ **Entire class joins on their phones** (like Menti/Kahoot)
 - ✅ **Everyone becomes a car** on a shared highway
-- ✅ **Physical Arduino button** triggers emergency
+- ✅ **Physical Arduino with LoRa radio** broadcasts emergency (simulates C-V2X)
+- ✅ **Gateway bridges radio → network** (simulates Roadside Unit)
 - ✅ **ALL cars move simultaneously** on **EVERYONE's screens**
+
+**Technology:** This demonstrates C-V2X (Cellular Vehicle-to-Everything) - the same tech being deployed in real cars by GM, Ford, and VW!
 
 ---
 
@@ -25,12 +28,24 @@ cd ../frontend
 npm install
 ```
 
-### **2. Upload Arduino Sketch**
+### **2. Upload Arduino Sketches**
 
-1. Open `arduino_emergency_button.ino` in Arduino IDE
-2. Connect Arduino via USB
-3. Select board & port
-4. Upload ✅
+**Emergency Vehicle (Arduino + LoRa):**
+1. Open `arduino_cv2x_emergency.ino` in Arduino IDE
+2. Install LoRa library: Tools → Manage Libraries → Search "LoRa" by Sandeep Mistry
+3. Connect Arduino via USB
+4. Select board & port
+5. Upload ✅
+
+**Gateway (ESP32 + LoRa):**
+1. Open `esp32_lora_gateway.ino` in Arduino IDE
+2. Update WiFi credentials (SSID & password)
+3. Update WebSocket server IP (your laptop IP)
+4. Install required libraries (LoRa, WebSockets, U8g2 if using TTGO)
+5. Select "ESP32 Dev Module" or "TTGO LoRa32" as board
+6. Upload ✅
+
+**Wiring:** See `CV2X_LORA_IMPLEMENTATION.md` for detailed pin connections!
 
 ### **3. Start Servers**
 
@@ -62,10 +77,14 @@ Everyone on same WiFi joins this URL!
 
 ## 🎯 **Demo Steps**
 
-1. **Students join** → Watch cars appear on screen
-2. **Press Arduino button** → All cars move right instantly
-3. **Press again** → Cars return to normal
-4. **Mind = Blown** 🤯
+1. **Students join** → Watch cars appear on screen (each device = unique vehicle)
+2. **Press Arduino button** → Emergency broadcasts via LoRa radio 📡
+3. **Gateway receives** → Converts LoRa → WebSocket (shows on OLED!)
+4. **All cars move right instantly** → Everyone's screens update simultaneously
+5. **Press again** → Emergency cleared, cars return to normal
+6. **Class reaction** → 🤯🤯🤯
+
+**What makes this special:** Real radio communication + Network distribution = Actual C-V2X architecture!
 
 ---
 
