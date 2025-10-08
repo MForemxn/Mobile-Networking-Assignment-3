@@ -24,6 +24,8 @@ function App() {
   const [vehicles, setVehicles] = useState({});
   const [connectionError, setConnectionError] = useState(null);
   const [laneChanges, setLaneChanges] = useState({});
+  const [controlLocked, setControlLocked] = useState(false);  // Emergency takeover
+  const [myLane, setMyLane] = useState(2);  // Student's current lane
 
   // Handle WebSocket messages
   const handleWebSocketMessage = useCallback((data) => {
@@ -81,13 +83,22 @@ function App() {
         break;
 
       case 'emergency_signal':
+      case 'emergency_takeover':
         setEmergencyActive(true);
-        console.log('Emergency signal received:', data.message);
+        if (data.takeover) {
+          setControlLocked(true);
+          console.log('🚨 EMERGENCY TAKEOVER - Control locked!', data.message);
+          // Auto-move to right lane during takeover
+          setMyLane(3);
+        } else {
+          console.log('Emergency signal received:', data.message);
+        }
         break;
 
       case 'emergency_cleared':
         setEmergencyActive(false);
-        console.log('Emergency cleared');
+        setControlLocked(false);
+        console.log('🟢 Emergency cleared - Control restored');
         break;
 
       default:
@@ -176,6 +187,15 @@ function App() {
     }
   };
 
+  // Change lane (student control)
+  const changeLane = (newLane) => {
+    if (isConnected && !controlLocked && newLane !== myLane) {
+      setMyLane(newLane);
+      websocketService.sendLaneChange(newLane, 'manual');
+      console.log(`Changed to lane ${newLane}`);
+    }
+  };
+
   // Get vehicle style based on type and state
   const getVehicleStyle = (vehicle) => {
     const baseStyle = {
@@ -230,6 +250,56 @@ function App() {
           <div><strong>Device ID:</strong> {deviceId || 'Not assigned'}</div>
           <div><strong>Vehicle:</strong> {vehicleType ? VEHICLE_TYPES[vehicleType]?.name : 'Unknown'}</div>
         </div>
+
+        {/* Lane Control Buttons - for students to drive */}
+        {!isEmergencyVehicle && (
+          <div className="lane-controls" style={{ marginTop: '15px' }}>
+            <h4 style={{ marginBottom: '10px' }}>
+              {controlLocked ? '🔒 Control Locked (Emergency)' : '🚗 Drive Your Vehicle'}
+            </h4>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+              <button
+                onClick={() => changeLane(1)}
+                disabled={!isConnected || controlLocked || myLane === 1}
+                style={{
+                  padding: '10px 20px',
+                  fontSize: '14px',
+                  cursor: (controlLocked || myLane === 1) ? 'not-allowed' : 'pointer',
+                  opacity: (controlLocked || myLane === 1) ? 0.5 : 1
+                }}
+              >
+                ⬅️ Left Lane
+              </button>
+              <button
+                onClick={() => changeLane(2)}
+                disabled={!isConnected || controlLocked || myLane === 2}
+                style={{
+                  padding: '10px 20px',
+                  fontSize: '14px',
+                  cursor: (controlLocked || myLane === 2) ? 'not-allowed' : 'pointer',
+                  opacity: (controlLocked || myLane === 2) ? 0.5 : 1
+                }}
+              >
+                ⬆️ Middle Lane
+              </button>
+              <button
+                onClick={() => changeLane(3)}
+                disabled={!isConnected || controlLocked || myLane === 3}
+                style={{
+                  padding: '10px 20px',
+                  fontSize: '14px',
+                  cursor: (controlLocked || myLane === 3) ? 'not-allowed' : 'pointer',
+                  opacity: (controlLocked || myLane === 3) ? 0.5 : 1
+                }}
+              >
+                ➡️ Right Lane
+              </button>
+            </div>
+            <div style={{ marginTop: '10px', fontSize: '12px', color: '#666' }}>
+              Current Lane: {LANES[myLane]?.name || 'Unknown'}
+            </div>
+          </div>
+        )}
 
         {isEmergencyVehicle && (
           <div className="emergency-controls">

@@ -212,35 +212,47 @@ class SimpleVehicleServer:
         else:
             logger.info(f"Emergency cleared by device: {device_id}")
     
-    async def trigger_arduino_emergency(self):
-        """Trigger emergency from Arduino button - affects ALL vehicles."""
+    async def trigger_lora_emergency(self):
+        """Trigger emergency from LoRa receiver - TAKEOVER MODE."""
         if not self.emergency_active:
             self.emergency_active = True
-            self.emergency_device = "ARDUINO_BUTTON"
+            self.emergency_device = "LORA_EMERGENCY"
 
-            # Broadcast to EVERYONE
+            # TAKEOVER: Broadcast emergency takeover to ALL vehicles
             emergency_msg = {
-                'type': 'emergency_signal',
-                'device_id': 'ARDUINO',
-                'message': '🚨 PHYSICAL EMERGENCY BUTTON PRESSED - CLEAR ALL LANES!',
-                'source': 'arduino'
+                'type': 'emergency_takeover',
+                'device_id': 'CV2X_EMERGENCY',
+                'message': '🚨 C-V2X EMERGENCY DETECTED - INITIATING TAKEOVER MODE',
+                'source': 'cv2x_lora',
+                'takeover': True  # Signal to clients: server takes control
             }
             await self.broadcast_message(emergency_msg)
-            logger.info("🔴 ARDUINO EMERGENCY ACTIVATED")
+            logger.info(f"🎮 EMERGENCY TAKEOVER MODE ACTIVATED")
+            logger.info(f"   All {len(self.connections)} vehicles under emergency control")
     
-    async def clear_arduino_emergency(self):
-        """Clear emergency from Arduino button."""
+    async def clear_lora_emergency(self):
+        """Clear emergency from LoRa - RETURN CONTROL."""
         if self.emergency_active:
             self.emergency_active = False
             self.emergency_device = None
 
             clear_msg = {
                 'type': 'emergency_cleared',
-                'device_id': 'ARDUINO',
-                'source': 'arduino'
+                'device_id': 'CV2X_EMERGENCY',
+                'source': 'cv2x_lora',
+                'takeover': False  # Signal: students regain control
             }
             await self.broadcast_message(clear_msg)
-            logger.info("🟢 ARDUINO EMERGENCY CLEARED")
+            logger.info(f"🟢 EMERGENCY CLEARED - CONTROL RETURNED TO STUDENTS\n")
+    
+    # Keep old Arduino methods for backward compatibility
+    async def trigger_arduino_emergency(self):
+        """Legacy method - calls LoRa emergency."""
+        await self.trigger_lora_emergency()
+    
+    async def clear_arduino_emergency(self):
+        """Legacy method - calls LoRa clear."""
+        await self.clear_lora_emergency()
 
     async def connection_handler(self, websocket):
         """Handle new WebSocket connection."""
