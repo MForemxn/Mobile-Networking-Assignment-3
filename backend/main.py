@@ -28,6 +28,7 @@ class SimpleVehicleServer:
         self.port = port
         self.connections = {}  # device_id -> websocket
         self.device_states = {}  # device_id -> state info
+        self.roster = {}  # device_id -> {name, color}
         self.emergency_active = False
         self.emergency_device = None
         self.session_id = "classroom_demo_2024"  # Single shared session for everyone
@@ -114,6 +115,20 @@ class SimpleVehicleServer:
                         break
 
             if not device_id or device_id not in self.connections:
+                return
+
+            if message_type == 'register_user':
+                # Student registers with name/color
+                name = data.get('name', 'Student')[:32]
+                color = data.get('color') or self.generate_vehicle_color(len(self.roster))
+                self.roster[device_id] = { 'name': name, 'color': color }
+                # Update device state color too
+                if device_id in self.device_states:
+                    self.device_states[device_id]['color'] = color
+                await self.broadcast_message({
+                    'type': 'roster_update',
+                    'roster': self.roster
+                })
                 return
 
             if message_type == 'register_emergency' or message_type == 'register':

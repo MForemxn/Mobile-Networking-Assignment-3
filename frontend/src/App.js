@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './index.css';
 import websocketService from './services/websocketService';
+import LoginPage from './LoginPage';
 
 const VEHICLE_TYPES = {
   regular_car: { name: 'Car', color: 'regular', width: 40, height: 20 },
@@ -16,6 +17,9 @@ const LANES = {
 };
 
 function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userName, setUserName] = useState('');
+  const [userColor, setUserColor] = useState('');
   const [isConnected, setIsConnected] = useState(false);
   const [deviceId, setDeviceId] = useState(null);
   const [vehicleType, setVehicleType] = useState(null);
@@ -26,6 +30,26 @@ function App() {
   const [laneChanges, setLaneChanges] = useState({});
   const [controlLocked, setControlLocked] = useState(false);  // Emergency takeover
   const [myLane, setMyLane] = useState(2);  // Student's current lane
+
+  // Handle login
+  const handleLogin = (code, name) => {
+    setUserName(name);
+    setUserColor(generateRandomColor());
+    setIsLoggedIn(true);
+    
+    // Connect to WebSocket with name
+    websocketService.connect(name);
+  };
+
+  // Generate random car color
+  const generateRandomColor = () => {
+    const colors = [
+      '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+      '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
+      '#F8C471', '#82E0AA', '#F1948A', '#85C1E9', '#D7BDE2'
+    ];
+    return colors[Math.floor(Math.random() * colors.length)];
+  };
 
   // Handle WebSocket messages
   const handleWebSocketMessage = useCallback((data) => {
@@ -228,6 +252,10 @@ function App() {
 
   return (
     <div className="App">
+      {!isLoggedIn && (
+        <LoginPage onJoin={handleLogin} />
+      )}
+      {isLoggedIn && (
       {/* Connection Status */}
       <div className="connection-status">
         <div className={`status-dot ${isConnected ? 'connected' : ''}`} />
@@ -365,6 +393,7 @@ function App() {
             Retry Connection
           </button>
         </div>
+      )}
       )}
     </div>
   );

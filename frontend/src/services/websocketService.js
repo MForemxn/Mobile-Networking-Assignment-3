@@ -18,7 +18,7 @@ class WebSocketService {
   /**
    * Connect to the WebSocket server
    */
-  connect() {
+  connect(name, color) {
     try {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const wsUrl = `${protocol}//${window.location.hostname}:8765`;
@@ -34,6 +34,11 @@ class WebSocketService {
 
         // Request current system state
         this.send({ type: 'get_system_state' });
+
+        // Send user registration (name/color)
+        if (name) {
+          this.send({ type: 'register_user', name, color });
+        }
       };
 
       this.websocket.onmessage = (event) => {
@@ -103,6 +108,10 @@ class WebSocketService {
 
       case 'system_state':
         this.emit('systemState', data);
+        break;
+
+      case 'roster_update':
+        this.emit('rosterUpdate', data);
         break;
 
       case 'position_update':
