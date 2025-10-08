@@ -33,12 +33,13 @@ function App() {
 
   // Handle login
   const handleLogin = (code, name) => {
+    const color = generateRandomColor();
     setUserName(name);
-    setUserColor(generateRandomColor());
+    setUserColor(color);
     setIsLoggedIn(true);
     
-    // Connect to WebSocket with name
-    websocketService.connect(name);
+    // Connect to WebSocket with name/color
+    websocketService.connect(name, color);
   };
 
   // Generate random car color
@@ -166,11 +167,11 @@ function App() {
     websocketService.addEventListener('emergencySignal', handleWebSocketMessage);
     websocketService.addEventListener('emergencyCleared', handleWebSocketMessage);
 
-    // Initialize connection
-    if (!websocketService.isConnected) {
-      websocketService.connect();
-    } else {
-      setIsConnected(true);
+    // Initialize connection only after login
+    if (isLoggedIn) {
+      if (websocketService.isConnected) {
+        setIsConnected(true);
+      }
     }
 
     // Cleanup function
@@ -186,7 +187,7 @@ function App() {
       websocketService.removeEventListener('emergencySignal', handleWebSocketMessage);
       websocketService.removeEventListener('emergencyCleared', handleWebSocketMessage);
     };
-  }, [handleWebSocketMessage]);
+  }, [handleWebSocketMessage, isLoggedIn]);
 
   // Send emergency signal
   const sendEmergencySignal = () => {
@@ -256,6 +257,7 @@ function App() {
         <LoginPage onJoin={handleLogin} />
       )}
       {isLoggedIn && (
+      <>
       {/* Connection Status */}
       <div className="connection-status">
         <div className={`status-dot ${isConnected ? 'connected' : ''}`} />
@@ -394,6 +396,7 @@ function App() {
           </button>
         </div>
       )}
+      </>
       )}
     </div>
   );
