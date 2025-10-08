@@ -2,6 +2,7 @@
 """
 Simple Emergency Vehicle Communication System - WebSocket Server
 Basic WebSocket server for testing the frontend without complex dependencies.
+Supports Arduino emergency button integration for classroom demos.
 """
 
 import asyncio
@@ -10,6 +11,7 @@ import logging
 import uuid
 import websockets
 from websockets import WebSocketServerProtocol
+from arduino_interface import ArduinoInterface
 
 # Configure logging
 logging.basicConfig(
@@ -21,13 +23,15 @@ logger = logging.getLogger(__name__)
 class SimpleVehicleServer:
     """Simple WebSocket server for vehicle communication simulation."""
 
-    def __init__(self, host: str = 'localhost', port: int = 8765):
+    def __init__(self, host: str = '0.0.0.0', port: int = 8765):
         self.host = host
         self.port = port
         self.connections = {}  # device_id -> websocket
         self.device_states = {}  # device_id -> state info
         self.emergency_active = False
         self.emergency_device = None
+        self.session_id = "classroom_demo_2024"  # Single shared session for everyone
+        self.arduino_connected = False
 
     def generate_device_id(self):
         """Generate a unique device ID."""
@@ -38,19 +42,39 @@ class SimpleVehicleServer:
         device_id = self.generate_device_id()
         self.connections[device_id] = websocket
 
+        # Auto-assign vehicle position to avoid overlaps in shared view
+        num_vehicles = len(self.device_states)
+        lane = (num_vehicles % 3) + 1  # Distribute across 3 lanes
+        position_x = (num_vehicles * 150) % 800  # Spread horizontally
+
         # Initialize device state
         self.device_states[device_id] = {
             'device_id': device_id,
             'vehicle_type': device_type or 'regular_car',
-            'current_lane': 2,  # Middle lane
-            'position_x': 0,
-            'position_y': 50,
+            'current_lane': lane,
+            'position_x': position_x,
+            'position_y': (lane - 1) * 50 + 25,
             'speed': 50,
-            'is_emergency_active': device_type == 'emergency_vehicle'
+            'is_emergency_active': device_type == 'emergency_vehicle',
+            'color': self.generate_vehicle_color(num_vehicles)
         }
 
-        logger.info(f"Device registered: {device_id}")
+        logger.info(f"Device registered: {device_id} | Total vehicles: {len(self.device_states)}")
+        
+        # Broadcast to all that a new vehicle joined
+        await self.broadcast_message({
+            'type': 'vehicle_joined',
+            'device_id': device_id,
+            'total_vehicles': len(self.device_states)
+        }, exclude_device=device_id)
+        
         return device_id
+    
+    def generate_vehicle_color(self, index):
+        """Generate a unique color for each vehicle."""
+        colors = ['#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', 
+                  '#1abc9c', '#e67e22', '#34495e', '#16a085', '#d35400']
+        return colors[index % len(colors)]
 
     async def unregister_device(self, device_id: str):
         """Remove a device."""
@@ -93,27 +117,10 @@ class SimpleVehicleServer:
                 return
 
             if message_type == 'register_emergency':
-                self.emergency_active = True
-                self.emergency_device = device_id
-
-                # Broadcast emergency signal
-                emergency_msg = {
-                    'type': 'emergency_signal',
-                    'device_id': device_id,
-                    'message': 'Emergency vehicle approaching - clear the way!'
-                }
-                await self.broadcast_message(emergency_msg, exclude_device=device_id)
+                await self.trigger_emergency(device_id)
 
             elif message_type == 'clear_emergency':
-                self.emergency_active = False
-                self.emergency_device = None
-
-                # Broadcast emergency cleared
-                clear_msg = {
-                    'type': 'emergency_cleared',
-                    'device_id': device_id
-                }
-                await self.broadcast_message(clear_msg)
+                await self.clear_emergency(device_id)
 
             elif message_type == 'position_update':
                 # Update device position
@@ -154,6 +161,64 @@ class SimpleVehicleServer:
             logger.warning(f"Invalid JSON received: {message}")
         except Exception as e:
             logger.error(f"Error handling message: {e}")
+    
+    async def trigger_emergency(self, device_id):
+        """Trigger emergency signal from a specific device."""
+        self.emergency_active = True
+        self.emergency_device = device_id
+
+        # Broadcast emergency signal to ALL devices
+        emergency_msg = {
+            'type': 'emergency_signal',
+            'device_id': device_id,
+            'message': '🚨 EMERGENCY VEHICLE APPROACHING - CLEAR THE WAY!',
+            'source': 'vehicle'
+        }
+        await self.broadcast_message(emergency_msg)
+        logger.info(f"Emergency triggered by device: {device_id}")
+    
+    async def clear_emergency(self, device_id):
+        """Clear emergency signal from a specific device."""
+        self.emergency_active = False
+        self.emergency_device = None
+
+        # Broadcast emergency cleared to ALL devices
+        clear_msg = {
+            'type': 'emergency_cleared',
+            'device_id': device_id
+        }
+        await self.broadcast_message(clear_msg)
+        logger.info(f"Emergency cleared by device: {device_id}")
+    
+    async def trigger_arduino_emergency(self):
+        """Trigger emergency from Arduino button - affects ALL vehicles."""
+        if not self.emergency_active:
+            self.emergency_active = True
+            self.emergency_device = "ARDUINO_BUTTON"
+
+            # Broadcast to EVERYONE
+            emergency_msg = {
+                'type': 'emergency_signal',
+                'device_id': 'ARDUINO',
+                'message': '🚨 PHYSICAL EMERGENCY BUTTON PRESSED - CLEAR ALL LANES!',
+                'source': 'arduino'
+            }
+            await self.broadcast_message(emergency_msg)
+            logger.info("🔴 ARDUINO EMERGENCY ACTIVATED")
+    
+    async def clear_arduino_emergency(self):
+        """Clear emergency from Arduino button."""
+        if self.emergency_active:
+            self.emergency_active = False
+            self.emergency_device = None
+
+            clear_msg = {
+                'type': 'emergency_cleared',
+                'device_id': 'ARDUINO',
+                'source': 'arduino'
+            }
+            await self.broadcast_message(clear_msg)
+            logger.info("🟢 ARDUINO EMERGENCY CLEARED")
 
     async def connection_handler(self, websocket):
         """Handle new WebSocket connection."""
@@ -205,8 +270,21 @@ class SimpleVehicleServer:
                 await self.unregister_device(device_id)
 
     async def start_server(self):
-        """Start the WebSocket server."""
-        logger.info(f"Starting Emergency Vehicle Server on {self.host}:{self.port}")
+        """Start the WebSocket server and Arduino interface."""
+        logger.info(f"🚀 Starting Emergency Vehicle Server on {self.host}:{self.port}")
+        logger.info(f"📡 Session ID: {self.session_id}")
+        logger.info(f"🌐 Public URL: ws://{self.host}:{self.port}")
+        
+        # Try to connect to Arduino
+        arduino = ArduinoInterface(self)
+        arduino_connected = await arduino.connect()
+        
+        if arduino_connected:
+            # Start Arduino reading loop in background
+            asyncio.create_task(arduino.read_loop())
+            logger.info("✅ Arduino emergency button is ACTIVE")
+        else:
+            logger.info("⚠️  Arduino not connected - button will not be available")
 
         async with websockets.serve(
             self.connection_handler,
@@ -215,12 +293,16 @@ class SimpleVehicleServer:
             ping_interval=20,
             ping_timeout=10
         ):
-            logger.info("Server started successfully")
+            logger.info("✅ Server started successfully - Ready for classroom demo!")
+            logger.info("👥 Waiting for students to join...")
             await asyncio.Future()  # Run forever
 
     def run(self):
         """Run the server."""
-        asyncio.run(self.start_server())
+        try:
+            asyncio.run(self.start_server())
+        except KeyboardInterrupt:
+            logger.info("\n🛑 Server stopped by user")
 
 if __name__ == '__main__':
     server = SimpleVehicleServer()
