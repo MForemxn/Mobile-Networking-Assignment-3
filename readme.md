@@ -1,8 +1,18 @@
 # Emergency Vehicle Highway Communication System
+## **C-V2X Interactive Classroom Demonstration**
 
 ## Project Overview
 
-This project demonstrates a proof-of-concept for an emergency vehicle communication system that uses WebSocket technology to simulate Bluetooth Low Energy (BLE) communication between vehicles. The system allows an emergency vehicle (ambulance) to broadcast a signal that causes all other vehicles on a simulated multilane highway to simultaneously move out of the way, clearing a path for emergency response.
+This project demonstrates a **production-ready emergency vehicle communication system** using **C-V2X (Cellular Vehicle-to-Everything)** technology principles. The system uses **LoRa radio** for direct vehicle-to-vehicle communication, simulating the C-V2X direct mode (PC5) that is being deployed in real vehicles by major automakers.
+
+### **Key Innovation:**
+- **Real radio communication** using LoRa (915/868 MHz) to simulate C-V2X (5.9 GHz)
+- **Physical hardware** (Arduino + LoRa modules) demonstrating actual V2V protocols
+- **Interactive classroom demo** where entire class participates
+- **Roadside Unit (RSU) gateway** bridges radio to network infrastructure
+- **WebSocket distribution** represents V2N (Vehicle-to-Network) connectivity
+
+The emergency vehicle broadcasts via **LoRa radio**, received by a **gateway** (simulating a Roadside Unit), which forwards to all connected web clients, causing **all vehicles to simultaneously clear the way** - demonstrating real emergency vehicle preemption!
 
 ## Architecture
 
