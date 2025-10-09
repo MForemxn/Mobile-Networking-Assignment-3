@@ -118,6 +118,8 @@ function App() {
           console.log('🚨 EMERGENCY TAKEOVER - Control locked!', data.message);
           // Auto-move to right lane during takeover
           setMyLane(3);
+          // Show visual alert
+          alert('🚨 EMERGENCY LOCKOUT ACTIVATED!\n\nYour vehicle controls have been locked.\nThe system is taking over to clear the way for the emergency vehicle.');
         } else {
           console.log('Emergency signal received:', data.message);
         }
@@ -127,6 +129,8 @@ function App() {
         setEmergencyActive(false);
         setControlLocked(false);
         console.log('🟢 Emergency cleared - Control restored');
+        // Show visual alert
+        alert('✅ EMERGENCY CLEARED!\n\nControl has been returned to you.\nYou may now drive your vehicle.');
         break;
 
       default:
