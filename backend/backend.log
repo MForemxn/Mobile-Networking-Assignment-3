@@ -1,0 +1,23 @@
+/Users/masonforeman/Library/Mobile Documents/com~apple~CloudDocs/University/Year 2/Spring/Mobile Networking/Assignments/Assignment 3/backend/main.py:13: DeprecationWarning: websockets.WebSocketServerProtocol is deprecated
+  from websockets import WebSocketServerProtocol
+2025-10-09 19:17:02,185 - __main__ - INFO - 🚀 Starting Emergency Vehicle Server on 0.0.0.0:8765
+2025-10-09 19:17:02,185 - __main__ - INFO - 📡 Session ID: classroom_demo_2024
+2025-10-09 19:17:02,185 - __main__ - INFO - 🌐 Public URL: ws://0.0.0.0:8765
+2025-10-09 19:17:02,186 - arduino_interface - WARNING - ⚠️  No LoRa receiver found. System will work without RF demo.
+2025-10-09 19:17:02,186 - arduino_interface - WARNING -    Connect ESP32 receiver via USB for full C-V2X demo
+2025-10-09 19:17:02,186 - __main__ - INFO - ⚠️  Arduino not connected - button will not be available
+2025-10-09 19:17:02,188 - websockets.server - INFO - server listening on 0.0.0.0:8765
+2025-10-09 19:17:02,188 - __main__ - INFO - ✅ Server started successfully - Ready for classroom demo!
+2025-10-09 19:17:02,188 - __main__ - INFO - 👥 Waiting for students to join...
+2025-10-09 19:17:19,831 - websockets.server - INFO - connection open
+2025-10-09 19:17:19,832 - __main__ - INFO - Device registered: e25bb0e3 | Total vehicles: 1
+2025-10-09 19:17:27,484 - websockets.server - INFO - connection open
+2025-10-09 19:17:27,484 - __main__ - INFO - Device registered: b9c4678b | Total vehicles: 2
+2025-10-09 19:17:35,697 - websockets.server - INFO - connection open
+2025-10-09 19:17:35,697 - __main__ - INFO - Device registered: ea0055b4 | Total vehicles: 3
+2025-10-09 19:18:07,388 - websockets.server - INFO - connection open
+2025-10-09 19:18:07,388 - __main__ - INFO - Device registered: d46d7a2e | Total vehicles: 4
+2025-10-09 19:18:47,391 - __main__ - INFO - Connection closed for device: d46d7a2e
+2025-10-09 19:18:47,392 - __main__ - INFO - Device unregistered: d46d7a2e
+2025-10-09 19:18:52,405 - __main__ - INFO - Connection closed for device: b9c4678b
+2025-10-09 19:18:52,405 - __main__ - INFO - Device unregistered: b9c4678b

@@ -89,7 +89,9 @@ class SimpleVehicleServer:
     async def broadcast_message(self, message: dict, exclude_device: str = None):
         """Broadcast message to all connected devices."""
         disconnected = []
-        for device_id, websocket in self.connections.items():
+        # Create a copy to avoid dictionary changed size during iteration
+        connections_copy = list(self.connections.items())
+        for device_id, websocket in connections_copy:
             if device_id != exclude_device:
                 try:
                     await websocket.send(json.dumps(message))
@@ -207,30 +209,32 @@ class SimpleVehicleServer:
             logger.error(f"Error handling message: {e}")
     
     async def trigger_emergency(self, device_id, source='vehicle'):
-        """Trigger emergency signal from a specific device."""
+        """Trigger emergency signal from a specific device - WITH TAKEOVER."""
         self.emergency_active = True
         self.emergency_device = device_id
 
-        # Broadcast emergency signal to ALL devices
-        message_text = '🚨 EMERGENCY VEHICLE APPROACHING - CLEAR THE WAY!'
+        # Broadcast emergency TAKEOVER to ALL devices
+        message_text = '🚨 EMERGENCY VEHICLE APPROACHING - INITIATING TAKEOVER MODE'
         if source == 'cv2x_lora':
-            message_text = '📡 C-V2X EMERGENCY BROADCAST RECEIVED - CLEAR ALL LANES!'
+            message_text = '📡 C-V2X EMERGENCY BROADCAST RECEIVED - INITIATING TAKEOVER MODE'
         
         emergency_msg = {
-            'type': 'emergency_signal',
+            'type': 'emergency_takeover',
             'device_id': device_id,
             'message': message_text,
-            'source': source
+            'source': source,
+            'takeover': True  # Signal to clients: server takes control
         }
         await self.broadcast_message(emergency_msg)
         
         if source == 'cv2x_lora':
             logger.info(f"🚨 C-V2X Emergency triggered via LoRa: {device_id}")
         else:
-            logger.info(f"Emergency triggered by device: {device_id}")
+            logger.info(f"🚨 Emergency TAKEOVER activated by: {device_id}")
+        logger.info(f"   🎮 All {len(self.connections)} vehicles under emergency control")
     
     async def clear_emergency(self, device_id, source='vehicle'):
-        """Clear emergency signal from a specific device."""
+        """Clear emergency signal from a specific device - RETURN CONTROL."""
         self.emergency_active = False
         self.emergency_device = None
 
@@ -238,14 +242,16 @@ class SimpleVehicleServer:
         clear_msg = {
             'type': 'emergency_cleared',
             'device_id': device_id,
-            'source': source
+            'source': source,
+            'takeover': False  # Signal: students regain control
         }
         await self.broadcast_message(clear_msg)
         
         if source == 'cv2x_lora':
             logger.info(f"🟢 C-V2X Emergency cleared via LoRa: {device_id}")
         else:
-            logger.info(f"Emergency cleared by device: {device_id}")
+            logger.info(f"🟢 Emergency cleared by: {device_id}")
+        logger.info(f"   🎮 Control returned to {len(self.connections)} students")
     
     async def trigger_lora_emergency(self):
         """Trigger emergency from LoRa receiver - TAKEOVER MODE."""
