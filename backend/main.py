@@ -100,6 +100,22 @@ class SimpleVehicleServer:
         for device_id in disconnected:
             await self.unregister_device(device_id)
 
+    async def send_state_update(self, device_id: str):
+        """Send current system state to a specific device."""
+        if device_id in self.connections:
+            state_msg = {
+                'type': 'system_state',
+                'devices': self.device_states,
+                'emergency_status': {
+                    'active': self.emergency_active,
+                    'active_emergency_device': self.emergency_device
+                }
+            }
+            try:
+                await self.connections[device_id].send(json.dumps(state_msg))
+            except:
+                pass
+
     async def handle_message(self, websocket: WebSocketServerProtocol, message: str):
         """Handle incoming message."""
         try:
@@ -310,9 +326,24 @@ class SimpleVehicleServer:
             }
             await websocket.send(json.dumps(state_msg))
 
-            # Handle incoming messages
-            async for message in websocket:
-                await self.handle_message(websocket, message)
+            # Start periodic state updates
+            async def send_periodic_updates():
+                while device_id in self.connections:
+                    try:
+                        await asyncio.sleep(0.5)  # 2x per second
+                        await self.send_state_update(device_id)
+                    except:
+                        break
+
+            # Run both message handler and periodic updates
+            update_task = asyncio.create_task(send_periodic_updates())
+            
+            try:
+                # Handle incoming messages
+                async for message in websocket:
+                    await self.handle_message(websocket, message)
+            finally:
+                update_task.cancel()
 
         except websockets.exceptions.ConnectionClosed:
             logger.info(f"Connection closed for device: {device_id}")
