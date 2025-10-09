@@ -66,9 +66,18 @@ class EmergencySimulator:
                 'snr': 8.5
             }
             
-            await self.websocket.send(json.dumps(message))
-            print("✅ Emergency signal sent!")
-            print("   Check student devices - controls should LOCK\n")
+            try:
+                await asyncio.wait_for(
+                    self.websocket.send(json.dumps(message)),
+                    timeout=2.0
+                )
+                print("✅ Emergency signal sent!")
+                print("   Check student devices - controls should LOCK\n")
+            except asyncio.TimeoutError:
+                print("❌ Timeout sending emergency signal!")
+                print("   Check if backend is running\n")
+            except Exception as e:
+                print(f"❌ Error sending: {e}\n")
     
     async def clear_emergency(self):
         """Simulate emergency clear."""
@@ -86,9 +95,18 @@ class EmergencySimulator:
                 'source': 'cv2x_lora'
             }
             
-            await self.websocket.send(json.dumps(message))
-            print("✅ Clear signal sent!")
-            print("   Check student devices - controls should UNLOCK\n")
+            try:
+                await asyncio.wait_for(
+                    self.websocket.send(json.dumps(message)),
+                    timeout=2.0
+                )
+                print("✅ Clear signal sent!")
+                print("   Check student devices - controls should UNLOCK\n")
+            except asyncio.TimeoutError:
+                print("❌ Timeout sending clear signal!")
+                print("   Check if backend is running\n")
+            except Exception as e:
+                print(f"❌ Error sending: {e}\n")
     
     async def run(self):
         """Main loop."""
