@@ -112,8 +112,8 @@ class EmergencySimulator:
         print("Ready! Press a key...\n")
         
         # Start keyboard listener in background
-        loop = asyncio.get_event_loop()
-        loop.run_in_executor(None, self.keyboard_listener)
+        self.loop = asyncio.get_event_loop()
+        self.loop.run_in_executor(None, self.keyboard_listener)
         
         # Keep connection alive
         try:
@@ -137,12 +137,12 @@ class EmergencySimulator:
                     if key == 'e':
                         asyncio.run_coroutine_threadsafe(
                             self.trigger_emergency(),
-                            asyncio.get_event_loop()
+                            self.loop
                         )
                     elif key == 'c':
                         asyncio.run_coroutine_threadsafe(
                             self.clear_emergency(),
-                            asyncio.get_event_loop()
+                            self.loop
                         )
                     elif key == 'q':
                         print("\n👋 Quitting...")
