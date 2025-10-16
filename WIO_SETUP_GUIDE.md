@@ -76,37 +76,45 @@ That's it! WiFi and WebServer libraries are built-in.
    - Windows: `COM*`
    - Linux: `/dev/ttyUSB*` or `/dev/ttyACM*`
 
-### 5. Configure Code
+### 5. Install Python Dashboard Requirements
 
-Open `wio_lora_distance.ino` and change WiFi credentials:
+The dashboard runs on your laptop and reads serial data from the board.
 
-```cpp
-const char* ssid = "YOUR_WIFI_SSID";
-const char* password = "YOUR_WIFI_PASSWORD";
+```bash
+pip3 install pyserial flask
 ```
+
+### 6. Configure Code
 
 **Important**: Change the frequency if you're in Europe:
 ```cpp
 const float frequency = 868.0;  // EU frequency
 ```
 
-### 6. Upload Receiver Code
+### 7. Upload Receiver Code
 
 1. Connect your Wio-SX1262 + XIAO ESP32S3 via USB-C
 2. Open `wio_lora_distance.ino`
-3. Click **Upload** (→ button)
-4. Wait for compilation and upload
-5. Open **Serial Monitor** (115200 baud)
-6. You should see the IP address printed
+3. **Install ArduinoJson library** (Sketch → Include Library → Manage Libraries → search "ArduinoJson")
+4. Click **Upload** (→ button)
+5. Wait for compilation and upload
 
-### 7. Access Dashboard
+### 8. Run Dashboard
 
-1. Note the IP address from Serial Monitor (e.g., `192.168.1.100`)
-2. Open browser on your laptop
-3. Navigate to `http://[IP_ADDRESS]`
-4. You'll see the dashboard!
+Keep the board connected via USB and run:
 
-### 8. Setup Transmitter (Optional)
+```bash
+python3 lora_dashboard.py
+```
+
+The script will:
+- Auto-detect your board's serial port
+- Start reading data
+- Launch web server at http://localhost:5000
+
+Open your browser to `http://localhost:5000` to see the live dashboard!
+
+### 9. Setup Transmitter (Required for Distance Measurement)
 
 To actually measure distance, you need a second device transmitting:
 
@@ -117,7 +125,9 @@ To actually measure distance, you need a second device transmitting:
 
 ## Troubleshooting
 
-### "Board not found" or Upload Fails
+### Arduino Issues
+
+**"Board not found" or Upload Fails**
 
 1. **Enter bootloader mode**:
    - Hold **BOOT** button on XIAO
@@ -125,32 +135,51 @@ To actually measure distance, you need a second device transmitting:
    - Release **BOOT** button
    - Try uploading again
 
-### "Port not found"
+**"Port not found"**
 
-macOS needs CH340 drivers for some XIAO boards:
+macOS may need CH340 drivers for some XIAO boards:
 ```bash
 brew tap homebrew/cask-drivers
 brew install homebrew/cask-drivers/wch-ch34x-usb-serial-driver
 ```
 
-### LoRa Initialization Fails
+**ArduinoJson compilation error**
+
+If you get errors about ArduinoJson, install it: **Sketch → Include Library → Manage Libraries → "ArduinoJson" by Benoit Blanchon**
+
+### LoRa Issues
+
+**Initialization Fails**
 
 - Check the Wio module is fully seated on the XIAO
 - Try different frequency: 915.0 (US) or 868.0 (EU)
 - Check antenna is connected
 
-### No WiFi Connection
-
-- Double-check SSID and password
-- Ensure WiFi is 2.4GHz (ESP32 doesn't support 5GHz)
-- Move closer to router
-
-### Dashboard Shows No Packets
+**Dashboard Shows No Packets**
 
 - Make sure transmitter is powered and running
 - Check both devices use same frequency and LoRa parameters
 - Try moving transmitter closer (<10m initially)
 - Check antenna is connected on both devices
+
+### Dashboard Issues
+
+**Python script can't find serial port**
+
+Run `python3 -m serial.tools.list_ports` to see available ports, then modify the script if needed.
+
+**"Address already in use" error**
+
+Port 5000 is taken. Change the port in `lora_dashboard.py`:
+```python
+app.run(host='0.0.0.0', port=5001, debug=False, threaded=True)
+```
+
+**No data appearing in dashboard**
+
+1. Check Serial Monitor in Arduino IDE first - if it shows JSON data, the board is working
+2. Close Arduino IDE Serial Monitor before running Python script (can't both read serial at once)
+3. Try unplugging and replugging the USB cable
 
 ## Distance Calibration
 
