@@ -21,8 +21,8 @@
 #include <RadioLib.h>
 
 // WiFi credentials - CHANGE THESE
-const char* ssid = "YOUR_WIFI_SSID";
-const char* password = "YOUR_WIFI_PASSWORD";
+const char* ssid = "Nothing Phone (3a)_1378";
+const char* password = "password";
 
 // SX1262 pin definitions for Wio-SX1262 + XIAO ESP32S3
 #define LORA_CS    5   // D3

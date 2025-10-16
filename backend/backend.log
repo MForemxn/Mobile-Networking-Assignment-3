@@ -1,22 +1,26 @@
 /Users/masonforeman/Library/Mobile Documents/com~apple~CloudDocs/University/Year 2/Spring/Mobile Networking/Assignments/Assignment 3/backend/main.py:13: DeprecationWarning: websockets.WebSocketServerProtocol is deprecated
   from websockets import WebSocketServerProtocol
-2025-10-09 19:20:56,725 - __main__ - INFO - 🚀 Starting Emergency Vehicle Server on 0.0.0.0:8765
-2025-10-09 19:20:56,725 - __main__ - INFO - 📡 Session ID: classroom_demo_2024
-2025-10-09 19:20:56,725 - __main__ - INFO - 🌐 Public URL: ws://0.0.0.0:8765
-2025-10-09 19:20:56,727 - arduino_interface - WARNING - ⚠️  No LoRa receiver found. System will work without RF demo.
-2025-10-09 19:20:56,727 - arduino_interface - WARNING -    Connect ESP32 receiver via USB for full C-V2X demo
-2025-10-09 19:20:56,727 - __main__ - INFO - ⚠️  Arduino not connected - button will not be available
-2025-10-09 19:20:56,729 - websockets.server - INFO - server listening on 0.0.0.0:8765
-2025-10-09 19:20:56,729 - __main__ - INFO - ✅ Server started successfully - Ready for classroom demo!
-2025-10-09 19:20:56,729 - __main__ - INFO - 👥 Waiting for students to join...
-2025-10-09 19:20:58,950 - websockets.server - INFO - connection open
-2025-10-09 19:20:58,950 - __main__ - INFO - Device registered: 2aaeb1af | Total vehicles: 1
-2025-10-09 19:21:01,164 - websockets.server - INFO - connection open
-2025-10-09 19:21:01,164 - __main__ - INFO - Device registered: 4eaf335b | Total vehicles: 2
-2025-10-09 19:21:18,591 - websockets.server - INFO - connection open
-2025-10-09 19:21:18,591 - __main__ - INFO - Device registered: bda6a1d9 | Total vehicles: 3
-2025-10-09 19:21:33,105 - websockets.server - INFO - connection open
-2025-10-09 19:21:33,105 - __main__ - INFO - Device registered: 824443d9 | Total vehicles: 4
-2025-10-09 19:21:41,172 - __main__ - INFO - Connection closed for device: 4eaf335b
-2025-10-09 19:21:41,173 - __main__ - INFO - Device unregistered: 4eaf335b
-2025-10-09 19:21:41,173 - __main__ - INFO - Device unregistered: 4eaf335b
+2025-10-09 19:38:33,616 - __main__ - INFO - 🚀 Starting Emergency Vehicle Server on 0.0.0.0:8765
+2025-10-09 19:38:33,617 - __main__ - INFO - 📡 Session ID: classroom_demo_2024
+2025-10-09 19:38:33,617 - __main__ - INFO - 🌐 Public URL: ws://0.0.0.0:8765
+2025-10-09 19:38:33,618 - arduino_interface - WARNING - ⚠️  No LoRa receiver found. System will work without RF demo.
+2025-10-09 19:38:33,618 - arduino_interface - WARNING -    Connect ESP32 receiver via USB for full C-V2X demo
+2025-10-09 19:38:33,618 - __main__ - INFO - ⚠️  Arduino not connected - button will not be available
+2025-10-09 19:38:33,620 - websockets.server - INFO - server listening on 0.0.0.0:8765
+2025-10-09 19:38:33,620 - __main__ - INFO - ✅ Server started successfully - Ready for classroom demo!
+2025-10-09 19:38:33,620 - __main__ - INFO - 👥 Waiting for students to join...
+2025-10-09 19:38:34,497 - websockets.server - INFO - connection open
+2025-10-09 19:38:34,497 - __main__ - INFO - Device registered: 14fbcf1a | Total vehicles: 1
+2025-10-09 19:38:34,786 - websockets.server - INFO - connection open
+2025-10-09 19:38:34,786 - __main__ - INFO - Device registered: 98f5b5fa | Total vehicles: 2
+2025-10-09 19:38:34,798 - websockets.server - INFO - connection open
+2025-10-09 19:38:34,798 - __main__ - INFO - Device registered: 9249bc76 | Total vehicles: 3
+2025-10-09 19:39:14,499 - __main__ - INFO - Connection closed for device: 14fbcf1a
+2025-10-09 19:39:14,500 - __main__ - INFO - Device unregistered: 14fbcf1a
+2025-10-09 19:55:37,483 - __main__ - INFO - Device unregistered: 9249bc76
+2025-10-09 19:55:40,217 - websockets.server - INFO - connection open
+2025-10-09 19:55:40,217 - __main__ - INFO - Device registered: b6602639 | Total vehicles: 2
+2025-10-09 19:55:42,107 - websockets.server - INFO - connection open
+2025-10-09 19:55:42,107 - __main__ - INFO - Device registered: f2fbd92d | Total vehicles: 3
+2025-10-09 19:56:44,785 - __main__ - INFO - Connection closed for device: b6602639
+2025-10-09 19:56:44,786 - __main__ - INFO - Device unregistered: b6602639
